@@ -41,6 +41,10 @@ class YoloByteTracker:
         self.target_classes = target_classes
         self._tracks: dict[int, Track] = {}
 
+    @property
+    def track_count(self) -> int:
+        return len(self._tracks)
+
     def update(self, frame: np.ndarray, timestamp_seconds: float | None = None) -> list[Track]:
         now = timestamp_seconds if timestamp_seconds is not None else monotonic()
         result = self.model.track(
