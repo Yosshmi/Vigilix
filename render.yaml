@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: vigilix-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: VIGILIX_ENVIRONMENT
+        value: production
+      - key: VIGILIX_CORS_ORIGINS
+        sync: false
+      - key: VIGILIX_YOLO_MODEL
+        value: yolo11n.pt
+      - key: VIGILIX_CONFIDENCE_THRESHOLD
+        value: "0.35"
+      - key: VIGILIX_IOU_THRESHOLD
+        value: "0.45"
+      - key: VIGILIX_INFERENCE_SIZE
+        value: "640"
