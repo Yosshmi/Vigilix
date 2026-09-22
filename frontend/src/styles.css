@@ -25,6 +25,18 @@ button {
   padding: 10px 16px;
   font: inherit;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.secondary-button {
+  background: transparent;
 }
 
 .app-shell {
@@ -58,6 +70,19 @@ h1 {
 h2 {
   margin-top: 5px;
   font-size: 1.1rem;
+}
+
+.subtitle,
+.summary-copy {
+  color: #8297a2;
+}
+
+.subtitle {
+  margin-top: 7px;
+}
+
+.summary-copy {
+  font-size: 0.82rem;
 }
 
 .eyebrow {
@@ -95,14 +120,25 @@ h2 {
 
 .panel-heading {
   justify-content: space-between;
+  gap: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.video-placeholder,
+.result-video {
+  width: 100%;
+  min-height: 460px;
+  margin-top: 18px;
+  border-radius: 14px;
+  background: #071017;
 }
 
 .video-placeholder {
-  min-height: 460px;
-  margin-top: 18px;
   border: 1px dashed #315260;
-  border-radius: 14px;
-  background: #071017;
   display: grid;
   place-content: center;
   justify-items: center;
@@ -112,6 +148,45 @@ h2 {
 
 .video-placeholder strong {
   color: #d8e5ea;
+}
+
+.result-video {
+  display: block;
+  object-fit: contain;
+  max-height: 620px;
+}
+
+.progress-wrap {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #8fa4ae;
+  font-size: 0.82rem;
+}
+
+.progress-track {
+  height: 7px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #15252f;
+}
+
+.progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: #70c9d8;
+  transition: width 180ms ease;
+}
+
+.error-message {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  border-radius: 10px;
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.13);
 }
 
 .metrics {
@@ -133,7 +208,8 @@ h2 {
   color: #70c9d8;
 }
 
-.metric-card span {
+.metric-card span,
+.event-row span {
   color: #8fa4ae;
 }
 
@@ -156,9 +232,47 @@ h2 {
   color: #78909c;
 }
 
+.event-list {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.event-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #09151d;
+}
+
+.event-row > div {
+  display: grid;
+  gap: 4px;
+}
+
+.event-row > div:last-child {
+  text-align: right;
+}
+
+.event-row strong {
+  text-transform: capitalize;
+}
+
 @media (max-width: 820px) {
   .dashboard-grid {
     flex-direction: column;
+  }
+
+  .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .metrics {
@@ -166,7 +280,8 @@ h2 {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .video-placeholder {
+  .video-placeholder,
+  .result-video {
     min-height: 320px;
   }
 }
