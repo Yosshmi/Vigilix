@@ -38,6 +38,12 @@ export type AnalysisResult = {
   };
 };
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+
+function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
 async function parseJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
@@ -52,7 +58,7 @@ export async function uploadVideo(file: File): Promise<UploadResponse> {
   const body = new FormData();
   body.append("file", file);
 
-  const response = await fetch("/api/videos", {
+  const response = await fetch(apiUrl("/api/videos"), {
     method: "POST",
     body,
   });
@@ -61,7 +67,7 @@ export async function uploadVideo(file: File): Promise<UploadResponse> {
 }
 
 export async function startAnalysis(videoId: string): Promise<void> {
-  const response = await fetch(`/api/videos/${videoId}/analyze`, {
+  const response = await fetch(apiUrl(`/api/videos/${videoId}/analyze`), {
     method: "POST",
   });
 
@@ -69,11 +75,16 @@ export async function startAnalysis(videoId: string): Promise<void> {
 }
 
 export async function getStatus(videoId: string): Promise<StatusResponse> {
-  const response = await fetch(`/api/videos/${videoId}`);
+  const response = await fetch(apiUrl(`/api/videos/${videoId}`));
   return parseJson<StatusResponse>(response);
 }
 
 export async function getResult(videoId: string): Promise<AnalysisResult> {
-  const response = await fetch(`/api/videos/${videoId}/result`);
-  return parseJson<AnalysisResult>(response);
+  const response = await fetch(apiUrl(`/api/videos/${videoId}/result`));
+  const result = await parseJson<AnalysisResult>(response);
+
+  return {
+    ...result,
+    output_url: apiUrl(result.output_url),
+  };
 }
