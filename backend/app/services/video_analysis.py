@@ -43,6 +43,9 @@ class VideoAnalysisService:
 
         with VideoReader(input_path) as reader:
             metadata = reader.metadata
+            if metadata.width <= 0 or metadata.height <= 0:
+                raise ValueError("Unable to determine input video dimensions")
+
             zone = [
                 (metadata.width * 0.58, metadata.height * 0.2),
                 (metadata.width * 0.95, metadata.height * 0.2),
@@ -65,6 +68,9 @@ class VideoAnalysisService:
                 (metadata.width, metadata.height),
             )
 
+            if not writer.isOpened():
+                raise ValueError("Unable to initialize annotated video writer")
+
             try:
                 for video_frame in reader.frames():
                     tracks = tracker.update(video_frame.image, video_frame.timestamp_seconds)
@@ -84,7 +90,7 @@ class VideoAnalysisService:
             finally:
                 writer.release()
 
-            snapshot = engine.snapshot(active_tracks=len(tracker._tracks))
+            snapshot = engine.snapshot(active_tracks=tracker.track_count)
 
         elapsed = max(perf_counter() - start_time, 1e-9)
         return AnalysisResult(
