@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      VIGILIX_ENVIRONMENT: production
+      VIGILIX_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080"]'
+      VIGILIX_YOLO_MODEL: yolo11n.pt
+      VIGILIX_CONFIDENCE_THRESHOLD: "0.35"
+      VIGILIX_IOU_THRESHOLD: "0.45"
+      VIGILIX_INFERENCE_SIZE: "640"
+    volumes:
+      - vigilix_uploads:/app/uploads
+      - vigilix_outputs:/app/outputs
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  vigilix_uploads:
+  vigilix_outputs:
