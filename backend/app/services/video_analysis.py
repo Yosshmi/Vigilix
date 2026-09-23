@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import subprocess
 from time import perf_counter
 
 import cv2
@@ -8,6 +9,7 @@ from app.analytics.intrusion import IntrusionRule
 from app.analytics.loitering import LoiteringRule
 from app.analytics.people_counter import PeopleCounter
 from app.analytics.rules_engine import AnalyticsEngine
+from app.core.config import get_settings
 from app.vision.annotator import draw_counting_line, draw_tracks, draw_zone
 from app.vision.tracker import YoloByteTracker
 from app.vision.video import VideoReader
@@ -24,8 +26,8 @@ class AnalysisResult:
 
 
 class VideoAnalysisService:
-    def __init__(self, model_name: str = "yolo11n.pt") -> None:
-        self.model_name = model_name
+    def __init__(self) -> None:
+        self.settings = get_settings()
 
     def analyze(self, input_path: str | Path, output_path: str | Path) -> AnalysisResult:
         input_path = Path(input_path)
@@ -33,7 +35,10 @@ class VideoAnalysisService:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         tracker = YoloByteTracker(
-            model_name=self.model_name,
+            model_name=self.settings.yolo_model,
+            confidence=self.settings.confidence_threshold,
+            iou=self.settings.iou_threshold,
+            image_size=self.settings.inference_size,
             target_classes={"person", "car", "truck", "bus", "motorcycle", "bicycle"},
         )
 
@@ -61,8 +66,9 @@ class VideoAnalysisService:
                 loitering_rule=LoiteringRule("restricted-1", zone, threshold_seconds=5.0),
             )
 
+            intermediate_path = output_path.with_name(f"{output_path.stem}-intermediate.mp4")
             writer = cv2.VideoWriter(
-                str(output_path),
+                str(intermediate_path),
                 cv2.VideoWriter_fourcc(*"mp4v"),
                 metadata.fps or 24.0,
                 (metadata.width, metadata.height),
@@ -89,6 +95,26 @@ class VideoAnalysisService:
                     processed_frames += 1
             finally:
                 writer.release()
+
+            if processed_frames == 0:
+                intermediate_path.unlink(missing_ok=True)
+                raise ValueError("Video contains no readable frames")
+
+            try:
+                subprocess.run(
+                    [
+                        "ffmpeg", "-y", "-loglevel", "error", "-i", str(intermediate_path),
+                        "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+                        "-movflags", "+faststart", str(output_path),
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+            except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+                raise ValueError("Unable to encode browser-compatible video") from exc
+            finally:
+                intermediate_path.unlink(missing_ok=True)
 
             snapshot = engine.snapshot(active_tracks=tracker.track_count)
 

@@ -36,14 +36,16 @@ async def upload_video(file: UploadFile = File(...)) -> VideoUploadResponse:
     if suffix not in {".mp4", ".mov", ".avi", ".mkv"}:
         raise HTTPException(status_code=400, detail="Unsupported video format")
 
-    record = video_store.create(file.filename or "video.mp4")
     content = await file.read()
+
+    if not content:
+        raise HTTPException(status_code=400, detail="Video is empty")
 
     max_bytes = 50 * 1024 * 1024
     if len(content) > max_bytes:
-        video_store.records.pop(record.video_id, None)
         raise HTTPException(status_code=413, detail="Video exceeds 50 MB limit")
 
+    record = video_store.create(file.filename or "video.mp4")
     record.input_path.write_bytes(content)
 
     return VideoUploadResponse(
@@ -55,19 +57,13 @@ async def upload_video(file: UploadFile = File(...)) -> VideoUploadResponse:
 
 @router.post("/{video_id}/analyze")
 def analyze_video(video_id: str, background_tasks: BackgroundTasks) -> dict[str, str]:
-    record = video_store.get(video_id)
+    record, scheduled = video_store.queue_for_analysis(video_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    if record.status == "processing":
-        return {"video_id": video_id, "status": "processing"}
-
-    if record.status == "completed":
-        return {"video_id": video_id, "status": "completed"}
-
-    record.status = "queued"
-    background_tasks.add_task(_run_analysis, video_id)
-    return {"video_id": video_id, "status": "queued"}
+    if scheduled:
+        background_tasks.add_task(_run_analysis, video_id)
+    return {"video_id": video_id, "status": record.status}
 
 
 @router.get("/{video_id}", response_model=VideoStatusResponse)

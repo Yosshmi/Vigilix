@@ -1,6 +1,8 @@
 # Vigilix
 
-Real-time intelligent video analytics platform for object detection, multi-object tracking, and surveillance event analysis.
+End-to-end video analytics application for object detection, multi-object tracking, and surveillance event analysis.
+
+[Live Demo](https://vigilix-xi.vercel.app/) · [API Health](https://vigilix-api.onrender.com/health) · [Interactive API Docs](https://vigilix-api.onrender.com/docs)
 
 ## Features
 
@@ -10,7 +12,7 @@ Real-time intelligent video analytics platform for object detection, multi-objec
 - Directional line-crossing events
 - People counting and occupancy estimates
 - Loitering detection
-- Annotated video output with tracks and analytics overlays
+- Browser-compatible annotated video output with tracks and analytics overlays
 - FastAPI upload, analysis, status, and result APIs
 - React + TypeScript monitoring dashboard
 - Dockerized backend and frontend
@@ -21,7 +23,7 @@ Real-time intelligent video analytics platform for object detection, multi-objec
 **Computer Vision:** Python, OpenCV, Ultralytics YOLO, ByteTrack  
 **Backend:** FastAPI, Pydantic  
 **Frontend:** React, TypeScript, Vite  
-**Infrastructure:** Docker, Docker Compose, Nginx, GitHub Actions
+**Infrastructure:** Docker, Docker Compose, FFmpeg, Nginx, GitHub Actions, Vercel, Render
 
 ## Architecture
 
@@ -57,7 +59,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-The API runs at `http://localhost:8000`. Interactive API documentation is available at `/docs`.
+FFmpeg (including `ffprobe`) must also be installed on the host; the Docker image installs it automatically. The API runs at `http://localhost:8000`. Interactive API documentation is available at `/docs`.
 
 ### Frontend
 
@@ -84,23 +86,23 @@ Backend: `http://localhost:8000`
 
 The repository includes deployment configuration for a split deployment:
 
-- **Frontend:** Vercel
-- **Backend:** Render-compatible Docker service
+- **Frontend:** [Vercel](https://vigilix-xi.vercel.app/)
+- **Backend:** [Render](https://vigilix-api.onrender.com/health)
 
 For the frontend, set:
 
 ```text
-VITE_API_BASE_URL=https://<your-backend-domain>
+VITE_API_BASE_URL=https://vigilix-api.onrender.com
 ```
 
 For the backend, set:
 
 ```text
 VIGILIX_ENVIRONMENT=production
-VIGILIX_CORS_ORIGINS=["https://<your-frontend-domain>"]
+VIGILIX_CORS_ORIGINS=["https://vigilix-xi.vercel.app"]
 ```
 
-The first backend startup may need to download the lightweight YOLO model. CPU inference is intended for short demo clips; longer videos are better suited to local or GPU-backed execution.
+The deployed service uses Render's free CPU tier. It can take about a minute to wake after inactivity, and inference is deliberately limited to short demo clips (maximum upload size: 50 MB). Uploaded media and results use ephemeral storage and may be cleared when the service restarts. The first backend startup may also download the lightweight YOLO model.
 
 ## API workflow
 
@@ -115,7 +117,7 @@ Backend:
 
 ```bash
 cd backend
-pytest -q
+python -m pytest -q
 ```
 
 Frontend:
@@ -125,7 +127,7 @@ cd frontend
 npm run build
 ```
 
-CI runs both checks on pushes and pull requests.
+CI runs both checks on pushes and pull requests. The backend suite includes API, analytics-rule, tracking-state, configuration, and H.264 output compatibility coverage.
 
 ## Current scope
 

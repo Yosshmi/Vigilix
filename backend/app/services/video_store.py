@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
+from _thread import LockType
 from pathlib import Path
+from threading import Lock
 from uuid import uuid4
 
 
@@ -20,6 +22,7 @@ class InMemoryVideoStore:
     upload_dir: Path = field(default_factory=lambda: Path("uploads"))
     output_dir: Path = field(default_factory=lambda: Path("outputs"))
     records: dict[str, VideoRecord] = field(default_factory=dict)
+    _state_lock: LockType = field(default_factory=Lock, repr=False)
 
     def __post_init__(self) -> None:
         self.upload_dir.mkdir(parents=True, exist_ok=True)
@@ -42,6 +45,16 @@ class InMemoryVideoStore:
 
     def get(self, video_id: str) -> VideoRecord | None:
         return self.records.get(video_id)
+
+    def queue_for_analysis(self, video_id: str) -> tuple[VideoRecord | None, bool]:
+        with self._state_lock:
+            record = self.records.get(video_id)
+            if record is None:
+                return None, False
+            if record.status in {"queued", "processing", "completed"}:
+                return record, False
+            record.status = "queued"
+            return record, True
 
 
 video_store = InMemoryVideoStore()

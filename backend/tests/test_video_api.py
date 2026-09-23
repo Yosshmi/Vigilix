@@ -1,12 +1,31 @@
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from fastapi import BackgroundTasks
+
+from app.api.videos import analyze_video
 
 from app.main import app
 from app.services.video_store import video_store
 
 
 client = TestClient(app)
+
+
+def test_empty_upload_is_rejected():
+    response = client.post("/api/videos", files={"file": ("empty.mp4", b"", "video/mp4")})
+    assert response.status_code == 400
+
+
+def test_queued_analysis_is_not_scheduled_twice():
+    record = video_store.create("queued.mp4")
+    record.status = "queued"
+    tasks = BackgroundTasks()
+    try:
+        assert analyze_video(record.video_id, tasks)["status"] == "queued"
+        assert len(tasks.tasks) == 0
+    finally:
+        video_store.records.pop(record.video_id)
 
 
 def test_rejects_unsupported_video_format() -> None:

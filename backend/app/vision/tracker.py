@@ -40,10 +40,11 @@ class YoloByteTracker:
         self.image_size = image_size
         self.target_classes = target_classes
         self._tracks: dict[int, Track] = {}
+        self._active_track_ids: set[int] = set()
 
     @property
     def track_count(self) -> int:
-        return len(self._tracks)
+        return len(getattr(self, "_active_track_ids", set()))
 
     def update(self, frame: np.ndarray, timestamp_seconds: float | None = None) -> list[Track]:
         now = timestamp_seconds if timestamp_seconds is not None else monotonic()
@@ -58,6 +59,7 @@ class YoloByteTracker:
         )[0]
 
         if result.boxes is None or result.boxes.id is None:
+            self._active_track_ids = set()
             return []
 
         names = result.names
@@ -96,10 +98,12 @@ class YoloByteTracker:
             self._tracks[track_id] = track
             active.append(track)
 
+        self._active_track_ids = {track.track_id for track in active}
         return active
 
     def reset(self) -> None:
         self._tracks.clear()
+        self._active_track_ids.clear()
         predictor = getattr(self.model, "predictor", None)
         if predictor is not None and hasattr(predictor, "trackers"):
             predictor.trackers = None
